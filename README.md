@@ -29,3 +29,7 @@ The application uses **p5.js** to capture video from the webcam. For each frame,
 ## Usage
 
 Simply open `index.html` in a modern web browser. You will need to grant camera permission.
+
+## Author
+
+- **Hugo Paulista**
