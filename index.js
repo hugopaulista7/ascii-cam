@@ -6,6 +6,7 @@ let p,
 
 function setup() {
   noCanvas();
+  window.asciiCameraReady = false;
   
   // Create container div
   const container = createDiv('');
@@ -19,10 +20,34 @@ function setup() {
     capture.size(W, H);
     console.log("preload", capture.width, capture.height);
     loaded = true;
+    window.asciiCameraReady = true;
+    window.dispatchEvent(new CustomEvent('ascii-camera-status', { detail: { ready: true } }));
   });
   capture.hide();
+  if (capture && capture.elt) {
+    capture.elt.onloadedmetadata = () => {
+      if (!window.asciiCameraReady) {
+        window.asciiCameraReady = true;
+        window.dispatchEvent(new CustomEvent('ascii-camera-status', { detail: { ready: true } }));
+      }
+    };
+    capture.elt.onerror = () => {
+      window.asciiCameraReady = false;
+      window.dispatchEvent(new CustomEvent('ascii-camera-status', { detail: { ready: false } }));
+    };
+  }
   setInterval(()=>console.log(frameRate()), 1000);
 }
+
+window.asciiSource = window.asciiSource || 'camera';
+window.asciiImage = null;
+window.asciiImageSize = null;
+window.setAsciiImage = (dataUrl) => {
+  loadImage(dataUrl, (img) => {
+    window.asciiImage = img;
+    window.asciiImageSize = { width: img.width, height: img.height };
+  });
+};
 
 const PIX_PATTERNS = {
   standard: '   `.,_;^+*LTt1jZkAdGgDRNW@',
@@ -39,19 +64,51 @@ const PIX_PATTERNS = {
 
 function draw() {
   if (!loaded) return;
+  const sourceMode = window.asciiSource || 'camera';
+  const useImage = sourceMode === 'image' && window.asciiImage;
   let str = "";
     
-  capture.loadPixels();
+  const gridWidth = capture.width;
+  const gridHeight = capture.height;
+
+  if (sourceMode === 'image' && !window.asciiImage) {
+    for (let j = 0; j < gridHeight; ++j) {
+      str += ' '.repeat(gridWidth);
+      str += "\n";
+    }
+    p.html(str);
+    return;
+  }
+
+  const source = useImage ? window.asciiImage : capture;
+  source.loadPixels();
   
   const shape = window.asciiShape || 'rectangle';
   const patternName = window.asciiPattern || 'standard';
-  const PIX = PIX_PATTERNS[patternName] || PIX_PATTERNS.standard;
+  let PIX = PIX_PATTERNS[patternName] || PIX_PATTERNS.standard;
+  if (patternName === 'custom') {
+    const customPattern = window.asciiCustomPattern || '';
+    const hasVisibleChars = customPattern.replace(/\s/g, '').length > 0;
+    PIX = hasVisibleChars ? customPattern : PIX_PATTERNS.standard;
+  }
   
-  const centerX = capture.width / 2;
-  const centerY = capture.height / 2;
+  const centerX = gridWidth / 2;
+  const centerY = gridHeight / 2;
+
+  let imageMap = null;
+  if (useImage) {
+    const imgW = source.width;
+    const imgH = source.height;
+    const scale = Math.min(gridWidth / imgW, gridHeight / imgH);
+    const renderW = Math.floor(imgW * scale);
+    const renderH = Math.floor(imgH * scale);
+    const offsetX = Math.floor((gridWidth - renderW) / 2);
+    const offsetY = Math.floor((gridHeight - renderH) / 2);
+    imageMap = { imgW, imgH, renderW, renderH, offsetX, offsetY };
+  }
   
-  for (let j = 0; j < capture.height; ++j) {
-    for (let i = 0; i < capture.width; ++i) {
+  for (let j = 0; j < gridHeight; ++j) {
+    for (let i = 0; i < gridWidth; ++i) {
       
       
       // Check if pixel should be rendered based on shape
@@ -67,12 +124,13 @@ function draw() {
       
       let srcX = i;
       let srcY = j;
+      let sampleValid = true;
       
       if (window.asciiFlipH) {
-        srcX = capture.width - 1 - i;
+        srcX = gridWidth - 1 - i;
       }
       if (window.asciiFlipV) {
-        srcY = capture.height - 1 - j;
+        srcY = gridHeight - 1 - j;
       }
 
       // Shape logic based on SCREEN coordinates (i,j) so the shape stays stable?
@@ -84,25 +142,25 @@ function draw() {
         const dx = i - centerX;
         const dy = j - centerY;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const radius = Math.min(capture.width, capture.height) / 2;
+        const radius = Math.min(gridWidth, gridHeight) / 2;
         shouldRender = distance <= radius;
       } else if (shape === 'square') {
-        const size = Math.min(capture.width, capture.height);
-        const offsetX = (capture.width - size) / 2;
-        const offsetY = (capture.height - size) / 2;
+        const size = Math.min(gridWidth, gridHeight);
+        const offsetX = (gridWidth - size) / 2;
+        const offsetY = (gridHeight - size) / 2;
         shouldRender = i >= offsetX && i < offsetX + size && j >= offsetY && j < offsetY + size;
       } else if (shape === 'triangle') {
         // Triangle pointing up (base at bottom)
-        const height = capture.height;
+        const height = gridHeight;
         const relY = j; 
-        const triangleWidth = (relY) * (capture.width / height);
+        const triangleWidth = (relY) * (gridWidth / height);
         
         const leftBound = centerX - triangleWidth / 2;
         const rightBound = centerX + triangleWidth / 2;
         
         shouldRender = i >= leftBound && i <= rightBound;
       } else if (['diamond', 'pentagon', 'hexagon', 'octagon'].includes(shape)) {
-        const radius = Math.min(capture.width, capture.height) / 2;
+        const radius = Math.min(gridWidth, gridHeight) / 2;
         const dx = i - centerX;
         const dy = j - centerY;
         
@@ -129,12 +187,33 @@ function draw() {
       }
       
       if (shouldRender) {
-        const idx = (srcX + srcY*capture.width) * 4;
-        const bri = (capture.pixels[idx] + capture.pixels[idx+1] + capture.pixels[idx+2]) / (3 * 255);
-        
-        const c = PIX[floor(bri*PIX.length)];
-        // Use raw space for pre-formatted text
-        str += (c == ' ' ? ' ' : c);
+        let sampleX = srcX;
+        let sampleY = srcY;
+
+        if (useImage && imageMap) {
+          const { imgW, imgH, renderW, renderH, offsetX, offsetY } = imageMap;
+          const withinX = sampleX >= offsetX && sampleX < offsetX + renderW;
+          const withinY = sampleY >= offsetY && sampleY < offsetY + renderH;
+          if (withinX && withinY) {
+            const relX = (sampleX - offsetX) / renderW;
+            const relY = (sampleY - offsetY) / renderH;
+            sampleX = Math.min(imgW - 1, Math.floor(relX * imgW));
+            sampleY = Math.min(imgH - 1, Math.floor(relY * imgH));
+          } else {
+            sampleValid = false;
+          }
+        }
+
+        if (!sampleValid) {
+          str += ' ';
+        } else {
+          const idx = (sampleX + sampleY*source.width) * 4;
+          const bri = (source.pixels[idx] + source.pixels[idx+1] + source.pixels[idx+2]) / (3 * 255);
+          const safeIndex = Math.min(PIX.length - 1, Math.max(0, floor(bri * PIX.length)));
+          const c = PIX[safeIndex];
+          // Use raw space for pre-formatted text
+          str += (c == ' ' ? ' ' : c);
+        }
       } else {
         str += ' ';
       }

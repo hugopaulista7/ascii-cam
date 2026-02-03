@@ -10,7 +10,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const flipVCheckbox = document.getElementById('flip-v');
   const shapeSelect = document.getElementById('shape-select');
   const patternSelect = document.getElementById('pattern-select');
+  const customPatternWrapper = document.getElementById('custom-pattern-wrapper');
+  const customPatternInput = document.getElementById('custom-pattern');
+  const cameraTab = document.getElementById('tab-camera');
+  const imageTab = document.getElementById('tab-image');
+  const imageUploadPanel = document.getElementById('image-upload-panel');
+  const imageUploadInput = document.getElementById('image-upload');
+  const imageEmptyMessage = document.getElementById('image-empty-message');
   const resetBtn = document.getElementById('reset-btn');
+  const exportBtn = document.getElementById('export-btn');
   
   const fontSizeValue = document.getElementById('font-size-value');
   const lineHeightValue = document.getElementById('line-height-value');
@@ -18,6 +26,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const bgColorValue = document.getElementById('bg-color-value');
   
   let menuOpen = false;
+  let sourceMode = 'camera';
+  let hasImage = false;
+  let hasCameraAccess = false;
+  const SOURCE_KEY = 'asciiSourceMode';
   
   // Default settings
   const defaults = {
@@ -28,7 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     flipH: false,
     flipV: false,
     shape: 'rectangle',
-    pattern: 'standard'
+    pattern: 'standard',
+    customPattern: ''
   };
   
   // Load settings from localStorage
@@ -43,6 +56,19 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
     return defaults;
+  }
+
+  function loadStoredSource() {
+    const savedSource = localStorage.getItem(SOURCE_KEY);
+    return savedSource || 'camera';
+  }
+
+  function saveStoredSource(mode) {
+    localStorage.setItem(SOURCE_KEY, mode);
+  }
+
+  function clearStoredImage() {
+    localStorage.removeItem('asciiImageData');
   }
   
   // Save settings to localStorage
@@ -60,6 +86,8 @@ document.addEventListener('DOMContentLoaded', () => {
     flipVCheckbox.checked = settings.flipV || false;
     shapeSelect.value = settings.shape;
     patternSelect.value = settings.pattern || 'standard';
+    customPatternInput.value = settings.customPattern || '';
+    updateCustomPatternVisibility(settings.pattern || 'standard');
     
     fontSizeValue.textContent = `${settings.fontSize}px`;
     lineHeightValue.textContent = `${settings.lineHeight}px`;
@@ -74,6 +102,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Expose settings to global scope for p5.js
     window.asciiShape = settings.shape;
     window.asciiPattern = settings.pattern || 'standard';
+    window.asciiCustomPattern = settings.customPattern || '';
     window.asciiFlipH = settings.flipH || false;
     window.asciiFlipV = settings.flipV || false;
   }
@@ -81,14 +110,53 @@ document.addEventListener('DOMContentLoaded', () => {
   // Initialize with saved settings
   const savedSettings = loadSettings();
   applySettings(savedSettings);
+  const savedSource = loadStoredSource();
+  clearStoredImage();
+  setActiveTab(savedSource);
+  hasCameraAccess = Boolean(window.asciiCameraReady);
+  updateExportVisibility();
+
+  window.addEventListener('ascii-camera-status', (event) => {
+    hasCameraAccess = Boolean(event?.detail?.ready);
+    updateExportVisibility();
+  });
   
   // Toggle menu - existing code...
   configToggle.addEventListener('click', () => {
     menuOpen = !menuOpen;
     if (menuOpen) {
-      configMenu.style.transform = 'translateX(0)';
+      configMenu.classList.add('is-open');
+      const openIcon = document.getElementById('settings-icon-open');
+      const closeIcon = document.getElementById('settings-icon-close');
+      if (openIcon && closeIcon) {
+        openIcon.classList.add('opacity-0', 'scale-75');
+        openIcon.classList.remove('opacity-100', 'scale-100');
+        closeIcon.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          closeIcon.classList.add('opacity-100', 'scale-100');
+          closeIcon.classList.remove('opacity-0', 'scale-75');
+        });
+      }
+      configToggle.setAttribute('aria-label', 'Close settings');
     } else {
-      configMenu.style.transform = 'translateX(450px)';
+      configMenu.classList.remove('is-open');
+      const openIcon = document.getElementById('settings-icon-open');
+      const closeIcon = document.getElementById('settings-icon-close');
+      if (openIcon && closeIcon) {
+        closeIcon.classList.add('opacity-0', 'scale-75');
+        closeIcon.classList.remove('opacity-100', 'scale-100');
+        openIcon.classList.remove('hidden');
+        requestAnimationFrame(() => {
+          openIcon.classList.add('opacity-100', 'scale-100');
+          openIcon.classList.remove('opacity-0', 'scale-75');
+        });
+        setTimeout(() => {
+          if (!menuOpen) {
+            closeIcon.classList.add('hidden');
+          }
+        }, 200);
+      }
+      configToggle.setAttribute('aria-label', 'Settings');
     }
   });
 
@@ -170,9 +238,62 @@ document.addEventListener('DOMContentLoaded', () => {
   patternSelect.addEventListener('change', (e) => {
     const value = e.target.value;
     window.asciiPattern = value;
+    updateCustomPatternVisibility(value);
     
     const settings = loadSettings();
     settings.pattern = value;
+    saveSettings(settings);
+  });
+
+  // Tabs
+  function setActiveTab(mode) {
+    sourceMode = mode;
+    window.asciiSource = mode;
+    saveStoredSource(mode);
+    if (mode === 'image') {
+      cameraTab.classList.remove('is-active');
+      imageTab.classList.add('is-active');
+      imageUploadPanel.classList.remove('hidden');
+      imageEmptyMessage.classList.toggle('hidden', hasImage);
+    } else {
+      imageTab.classList.remove('is-active');
+      cameraTab.classList.add('is-active');
+      imageUploadPanel.classList.add('hidden');
+    }
+    updateExportVisibility();
+  }
+
+  cameraTab.addEventListener('click', () => setActiveTab('camera'));
+  imageTab.addEventListener('click', () => setActiveTab('image'));
+
+  imageUploadInput.addEventListener('change', (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) {
+      hasImage = false;
+      imageEmptyMessage.classList.remove('hidden');
+      updateExportVisibility();
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setActiveTab('image');
+      hasImage = true;
+      imageEmptyMessage.classList.add('hidden');
+      updateExportVisibility();
+      if (window.setAsciiImage) {
+        window.setAsciiImage(reader.result);
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Custom pattern input
+  customPatternInput.addEventListener('input', (e) => {
+    const value = e.target.value;
+    window.asciiCustomPattern = value;
+
+    const settings = loadSettings();
+    settings.customPattern = value;
     saveSettings(settings);
   });
   
@@ -181,6 +302,19 @@ document.addEventListener('DOMContentLoaded', () => {
     applySettings(defaults);
     saveSettings(defaults);
   });
+
+  // Export ASCII image
+  if (exportBtn) {
+    exportBtn.addEventListener('click', () => {
+      const canvas = renderAsciiToCanvas();
+      if (!canvas) return;
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const link = document.createElement('a');
+      link.download = `ascii-export-${timestamp}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  }
   
   // Update ASCII text style
   function updateAsciiStyle(property, value) {
@@ -191,5 +325,63 @@ document.addEventListener('DOMContentLoaded', () => {
         asciiSpan.style[property] = value;
       }
     }, 100);
+  }
+
+  function updateCustomPatternVisibility(pattern) {
+    if (pattern === 'custom') {
+      customPatternWrapper.classList.remove('hidden');
+    } else {
+      customPatternWrapper.classList.add('hidden');
+    }
+  }
+
+  function updateExportVisibility() {
+    if (!exportBtn) return;
+    const shouldHide = (sourceMode === 'image' && !hasImage) || !hasCameraAccess;
+    exportBtn.classList.toggle('invisible', shouldHide);
+    exportBtn.setAttribute('aria-hidden', shouldHide ? 'true' : 'false');
+  }
+
+  function renderAsciiToCanvas() {
+    const asciiSpan = document.querySelector('#ascii-container-p5 span');
+    if (!asciiSpan) return null;
+    const asciiText = asciiSpan.textContent || '';
+    if (!asciiText.trim()) return null;
+
+    const lines = asciiText.replace(/\n$/, '').split('\n');
+    const style = window.getComputedStyle(asciiSpan);
+    const fontSize = parseFloat(style.fontSize) || 16;
+    const lineHeightValue = parseFloat(style.lineHeight);
+    const lineHeight = Number.isFinite(lineHeightValue) ? lineHeightValue : fontSize * 1.2;
+    const fontFamily = style.fontFamily || 'Courier, monospace';
+    const textColor = style.color || '#00FF41';
+    const bgColor = window.getComputedStyle(document.body).backgroundColor || '#000000';
+    const padding = Math.max(8, Math.round(fontSize * 0.75));
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.font = `${fontSize}px ${fontFamily}`;
+
+    let maxWidth = 0;
+    for (const line of lines) {
+      const width = ctx.measureText(line).width;
+      if (width > maxWidth) maxWidth = width;
+    }
+
+    canvas.width = Math.ceil(maxWidth + padding * 2);
+    canvas.height = Math.ceil(lines.length * lineHeight + padding * 2);
+
+    ctx.fillStyle = bgColor;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.font = `${fontSize}px ${fontFamily}`;
+    ctx.fillStyle = textColor;
+    ctx.textBaseline = 'top';
+
+    lines.forEach((line, index) => {
+      ctx.fillText(line, padding, padding + index * lineHeight);
+    });
+
+    return canvas;
   }
 });

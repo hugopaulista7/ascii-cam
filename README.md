@@ -30,6 +30,20 @@ The application uses **p5.js** to capture video from the webcam. For each frame,
 
 Simply open `index.html` in a modern web browser. You will need to grant camera permission.
 
+## Run with Electron
+
+1. Install dependencies:
+
+```
+npm install
+```
+
+2. Start the app:
+
+```
+npm start
+```
+
 ## Author
 
 - **Hugo Paulista**

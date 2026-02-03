@@ -1,0 +1,14 @@
+{
+  "name": "ascii-webcam",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ASCII webcam renderer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-reloader": "^1.2.3"
+  }
+}
