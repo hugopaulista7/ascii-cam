@@ -5,10 +5,23 @@
   "description": "ASCII webcam renderer",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build:mac": "electron-builder --mac --dir"
   },
   "devDependencies": {
     "electron": "^31.0.0",
+    "electron-builder": "^26.7.0",
     "electron-reloader": "^1.2.3"
+  },
+  "build": {
+    "appId": "com.hugopaulista7.asciicam",
+    "productName": "ASCII Cam",
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "build/icon.png",
+      "target": [
+        "dir"
+      ]
+    }
   }
 }
