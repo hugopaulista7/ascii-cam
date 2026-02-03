@@ -1,0 +1,168 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>ASCII WEBCAM</title>
+    <meta name="author" content="Hugo Paulista">
+    <!-- compuuter screen emoji  favicon  -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 fill=%22%23000%22/><text x=%2250%22 y=%2265%22 font-family=%22monospace%22 font-size=%2280%22 text-anchor=%22middle%22 fill=%22%2300FF41%22>💻</text></svg>">
+    <meta name="description" content="ASCII WEBCAM">
+    <meta name="keywords" content="ASCII, WEBCAM, MATRIX, CYBERPUNK, HACKER, RETRO, VINTAGE">
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+
+  <style>
+    body {
+      background: #000000;
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #ascii-container, #ascii-container-p5 {
+      /* overflow: hidden; */
+      max-width: 1280px;
+      max-height: 720px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    span {
+      font-family: Courier, serif;
+      font-size: 16px;
+      line-height: 6px;
+      color: #00FF41;
+      display: inline-block;
+      white-space: pre;
+    }
+
+    /* Custom slider styling */
+    .slider::-webkit-slider-thumb {
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #008F11, #00FF41);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+
+    .slider::-moz-range-thumb {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #008F11, #00FF41);
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+    }
+  </style>
+
+  <body>
+    <!-- Config Menu Toggle Button -->
+    <button id="config-toggle" class="fixed top-6 right-6 z-50 bg-green-700 hover:bg-green-800 text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </button>
+
+    <!-- Config Menu Panel -->
+    <div id="config-menu" class="fixed top-6 right-6 z-40 bg-[#0D0208]/95 backdrop-blur-lg border border-[#003B00] rounded-2xl shadow-2xl p-6 w-96 transform translate-x-[450px] transition-transform duration-300">
+      <h2 class="text-2xl font-bold text-white mb-6 bg-gradient-to-r from-[#008F11] to-[#00FF41] bg-clip-text text-transparent">Settings</h2>
+      
+      <!-- Font Size Slider -->
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Width</p>
+          <p id="font-size-value" class=" font-mono">16px</p>
+        </label>
+        <input type="range" id="font-size" min="4" max="32" value="16" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Line Height Slider -->
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Height</p>
+          <p id="line-height-value" class=" font-mono">6px</p>
+        </label>
+        <input type="range" id="line-height" min="2" max="32" value="6" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Color Picker -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Text Color</label>
+        <div class="flex items-center gap-3">
+          <input type="color" id="text-color" value="#00FF41" class="w-16 h-16 rounded-lg cursor-pointer border-2 border-[#003B00] bg-[#0D0208]">
+          <p id="color-value" class="text-gray-400 font-mono text-sm">#00FF41</p>
+        </div>
+      </div>
+
+      <!-- Background Color Picker -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Background Color</label>
+        <div class="flex items-center gap-3">
+          <input type="color" id="bg-color" value="#000000" class="w-16 h-16 rounded-lg cursor-pointer border-2 border-[#003B00] bg-[#0D0208]">
+          <p id="bg-color-value" class="text-gray-400 font-mono text-sm">#000000</p>
+        </div>
+      </div>
+
+      <!-- Orientation -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Orientation</label>
+        <div class="flex flex-col gap-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" id="flip-h" class="w-5 h-5 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+            <span class="text-gray-300 text-sm">Flip Horizontal</span>
+          </label>
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input type="checkbox" id="flip-v" class="w-5 h-5 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+            <span class="text-gray-300 text-sm">Flip Vertical</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Shape Selector -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Shape</label>
+        <select id="shape-select" class="w-full bg-gray-700 text-white border border-[#003B00] rounded-lg px-4 py-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00FF41] transition-all">
+          <option value="rectangle">Rectangle</option>
+          <option value="square">Square</option>
+          <option value="circle">Circle</option>
+          <option value="triangle">Triangle</option>
+          <option value="diamond">Diamond</option>
+          <option value="pentagon">Pentagon</option>
+          <option value="hexagon">Hexagon</option>
+          <option value="octagon">Octagon</option>
+        </select>
+      </div>
+
+      <!-- Pattern Selector -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Pattern</label>
+        <select id="pattern-select" class="w-full bg-gray-700 text-white border border-[#003B00] rounded-lg px-4 py-3 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#00FF41] transition-all">
+          <option value="standard">Standard (Default)</option>
+          <option value="simple">Simple (.:-=+*#%@)</option>
+          <option value="minimal">Minimal (.coCO)</option>
+          <option value="blocks">Blocks (░▒▓█)</option>
+          <option value="matrix">Matrix (010101)</option>
+          <option value="crt">CRT (Lines)</option>
+        </select>
+      </div>
+
+      <!-- Reset Button -->
+      <button id="reset-btn" class="w-full bg-green-700 hover:bg-green-800 text-white font-medium py-3 rounded-lg transition-all duration-300 hover:scale-105 shadow-lg">
+        Reset to Defaults
+      </button>
+    </div>
+
+    <!-- p5.js will create elements here -->
+  </body>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+  <script src="./config.js"></script>
+  <script src="./index.js"></script>
+</html>
