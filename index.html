@@ -12,6 +12,10 @@
   </head>
 
   <style>
+    html, body {
+      overflow: visible;
+    }
+
     body {
       background: #000000;
       margin: 0;
@@ -22,7 +26,7 @@
     }
 
     #ascii-container, #ascii-container-p5 {
-      /* overflow: hidden; */
+      overflow: visible;
       max-width: 1280px;
       max-height: 720px;
       display: flex;
@@ -295,6 +299,109 @@
           <option value="crt">CRT (Lines)</option>
           <option value="custom">Custom</option>
         </select>
+      </div>
+
+      <!-- Pattern Animation -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Pattern Animation</label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="pattern-animate-toggle" class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+          <span class="text-gray-300 text-xs">Cycle through patterns</span>
+        </label>
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Pattern Speed</p>
+          <p id="pattern-speed-value" class="font-mono">6s</p>
+        </label>
+        <input type="range" id="pattern-speed" min="2" max="20" value="6" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Scatter -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Scatter</label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="scatter-toggle" class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+          <span class="text-gray-300 text-xs">Exploding characters</span>
+        </label>
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Scatter Amount</p>
+          <p id="scatter-amount-value" class="font-mono">20%</p>
+        </label>
+        <input type="range" id="scatter-amount" min="0" max="100" value="20" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Scatter Distance</p>
+          <p id="scatter-distance-value" class="font-mono">60%</p>
+        </label>
+        <input type="range" id="scatter-distance" min="20" max="120" value="60" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Bright Areas Only -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Bright Areas</label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="bright-only-toggle" class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+          <span class="text-gray-300 text-xs">Render only bright areas</span>
+        </label>
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Brightness Sensitivity</p>
+          <p id="bright-threshold-value" class="font-mono">60%</p>
+        </label>
+        <input type="range" id="bright-threshold" min="10" max="90" value="60" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Density Slider -->
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Density</p>
+          <p id="density-value" class="font-mono">100%</p>
+        </label>
+        <input type="range" id="density" min="10" max="100" value="100" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Glitch Toggle -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Glitch</label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="glitch-toggle" class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+          <span class="text-gray-300 text-xs">Enable glitch effect</span>
+        </label>
+      </div>
+
+      <!-- Glitch Controls -->
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Glitch Rate</p>
+          <p id="glitch-rate-value" class="font-mono">50%</p>
+        </label>
+        <input type="range" id="glitch-rate" min="0" max="100" value="50" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <div class="mb-6">
+        <label class="flex items-center justify-between text-gray-300 text-sm font-medium mb-2">
+          <p>Glitch Intensity</p>
+          <p id="glitch-intensity-value" class="font-mono">50%</p>
+        </label>
+        <input type="range" id="glitch-intensity" min="0" max="100" value="50" step="1" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider">
+      </div>
+
+      <!-- Mouse Avoid Toggle -->
+      <div class="mb-6">
+        <label class="text-gray-300 text-sm font-medium mb-2 block">Mouse Avoid</label>
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input type="checkbox" id="mouse-avoid-toggle" class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]">
+          <span class="text-gray-300 text-xs">Repel characters from cursor</span>
+        </label>
       </div>
 
       <!-- Custom Pattern Input -->

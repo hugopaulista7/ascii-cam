@@ -10,6 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
   const flipVCheckbox = document.getElementById('flip-v');
   const shapeSelect = document.getElementById('shape-select');
   const patternSelect = document.getElementById('pattern-select');
+  const patternAnimateToggle = document.getElementById('pattern-animate-toggle');
+  const patternSpeedSlider = document.getElementById('pattern-speed');
+  const scatterToggle = document.getElementById('scatter-toggle');
+  const scatterAmountSlider = document.getElementById('scatter-amount');
+  const scatterDistanceSlider = document.getElementById('scatter-distance');
+  const brightOnlyToggle = document.getElementById('bright-only-toggle');
+  const brightThresholdSlider = document.getElementById('bright-threshold');
+  const densitySlider = document.getElementById('density');
+  const glitchToggle = document.getElementById('glitch-toggle');
+  const glitchRateSlider = document.getElementById('glitch-rate');
+  const glitchIntensitySlider = document.getElementById('glitch-intensity');
+  const mouseAvoidToggle = document.getElementById('mouse-avoid-toggle');
   const customPatternWrapper = document.getElementById('custom-pattern-wrapper');
   const customPatternInput = document.getElementById('custom-pattern');
   const cameraTab = document.getElementById('tab-camera');
@@ -24,6 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const lineHeightValue = document.getElementById('line-height-value');
   const colorValue = document.getElementById('color-value');
   const bgColorValue = document.getElementById('bg-color-value');
+  const densityValue = document.getElementById('density-value');
+  const patternSpeedValue = document.getElementById('pattern-speed-value');
+  const scatterAmountValue = document.getElementById('scatter-amount-value');
+  const scatterDistanceValue = document.getElementById('scatter-distance-value');
+  const brightThresholdValue = document.getElementById('bright-threshold-value');
+  const glitchRateValue = document.getElementById('glitch-rate-value');
+  const glitchIntensityValue = document.getElementById('glitch-intensity-value');
   
   let menuOpen = false;
   let sourceMode = 'camera';
@@ -41,6 +60,18 @@ document.addEventListener('DOMContentLoaded', () => {
     flipV: false,
     shape: 'rectangle',
     pattern: 'standard',
+    patternAnimate: false,
+    patternSpeed: 6,
+    scatter: false,
+    scatterAmount: 20,
+    scatterDistance: 60,
+    brightOnly: false,
+    brightThreshold: 60,
+    density: 100,
+    glitch: false,
+    glitchRate: 50,
+    glitchIntensity: 50,
+    mouseAvoid: true,
     customPattern: ''
   };
   
@@ -86,6 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
     flipVCheckbox.checked = settings.flipV || false;
     shapeSelect.value = settings.shape;
     patternSelect.value = settings.pattern || 'standard';
+    patternAnimateToggle.checked = settings.patternAnimate || false;
+    patternSpeedSlider.value = settings.patternSpeed ?? 6;
+    scatterToggle.checked = settings.scatter || false;
+    scatterAmountSlider.value = settings.scatterAmount ?? 20;
+    scatterDistanceSlider.value = settings.scatterDistance ?? 60;
+    brightOnlyToggle.checked = settings.brightOnly || false;
+    brightThresholdSlider.value = settings.brightThreshold ?? 60;
+    densitySlider.value = settings.density ?? 100;
+    glitchToggle.checked = settings.glitch || false;
+    glitchRateSlider.value = settings.glitchRate ?? 50;
+    glitchIntensitySlider.value = settings.glitchIntensity ?? 50;
+    mouseAvoidToggle.checked = settings.mouseAvoid ?? true;
     customPatternInput.value = settings.customPattern || '';
     updateCustomPatternVisibility(settings.pattern || 'standard');
     
@@ -93,9 +136,15 @@ document.addEventListener('DOMContentLoaded', () => {
     lineHeightValue.textContent = `${settings.lineHeight}px`;
     colorValue.textContent = settings.textColor;
     bgColorValue.textContent = settings.backgroundColor || '#000000';
+    densityValue.textContent = `${settings.density ?? 100}%`;
+    patternSpeedValue.textContent = `${settings.patternSpeed ?? 6}s`;
+    scatterAmountValue.textContent = `${settings.scatterAmount ?? 20}%`;
+    scatterDistanceValue.textContent = `${settings.scatterDistance ?? 60}%`;
+    brightThresholdValue.textContent = `${settings.brightThreshold ?? 60}%`;
+    glitchRateValue.textContent = `${settings.glitchRate ?? 50}%`;
+    glitchIntensityValue.textContent = `${settings.glitchIntensity ?? 50}%`;
     
-    updateAsciiStyle('fontSize', `${settings.fontSize}px`);
-    updateAsciiStyle('lineHeight', `${settings.lineHeight}px`);
+    applyFontMetrics(settings);
     updateAsciiStyle('color', settings.textColor);
     document.body.style.background = settings.backgroundColor || '#000000';
     
@@ -105,6 +154,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.asciiCustomPattern = settings.customPattern || '';
     window.asciiFlipH = settings.flipH || false;
     window.asciiFlipV = settings.flipV || false;
+    window.asciiPatternAnimate = settings.patternAnimate || false;
+    window.asciiPatternSpeed = settings.patternSpeed ?? 6;
+    window.asciiScatter = settings.scatter || false;
+    window.asciiScatterAmount = settings.scatterAmount ?? 20;
+    window.asciiScatterDistance = settings.scatterDistance ?? 60;
+    window.asciiBrightOnly = settings.brightOnly || false;
+    window.asciiBrightThreshold = settings.brightThreshold ?? 60;
+    window.asciiDensity = settings.density ?? 100;
+    window.asciiGlitch = settings.glitch || false;
+    window.asciiGlitchRate = settings.glitchRate ?? 50;
+    window.asciiGlitchIntensity = settings.glitchIntensity ?? 50;
+    window.asciiMouseAvoid = settings.mouseAvoid ?? true;
   }
   
   // Initialize with saved settings
@@ -118,6 +179,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.addEventListener('ascii-camera-status', (event) => {
     hasCameraAccess = Boolean(event?.detail?.ready);
+    updateExportVisibility();
+  });
+
+  window.addEventListener('ascii-image-status', (event) => {
+    hasImage = Boolean(event?.detail?.ready);
+    imageEmptyMessage.classList.toggle('hidden', hasImage);
     updateExportVisibility();
   });
   
@@ -164,22 +231,22 @@ document.addEventListener('DOMContentLoaded', () => {
   fontSizeSlider.addEventListener('input', (e) => {
     const value = e.target.value;
     fontSizeValue.textContent = `${value}px`;
-    updateAsciiStyle('fontSize', `${value}px`);
     
     const settings = loadSettings();
     settings.fontSize = value;
     saveSettings(settings);
+    applyFontMetrics(settings);
   });
 
   // Line Height Slider
   lineHeightSlider.addEventListener('input', (e) => {
     const value = e.target.value;
     lineHeightValue.textContent = `${value}px`;
-    updateAsciiStyle('lineHeight', `${value}px`);
     
     const settings = loadSettings();
     settings.lineHeight = value;
     saveSettings(settings);
+    applyFontMetrics(settings);
   });
 
   // Text Color Picker
@@ -245,6 +312,123 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettings(settings);
   });
 
+  patternAnimateToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiPatternAnimate = checked;
+
+    const settings = loadSettings();
+    settings.patternAnimate = checked;
+    saveSettings(settings);
+  });
+
+  patternSpeedSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    patternSpeedValue.textContent = `${value}s`;
+    window.asciiPatternSpeed = value;
+
+    const settings = loadSettings();
+    settings.patternSpeed = value;
+    saveSettings(settings);
+  });
+
+  scatterToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiScatter = checked;
+
+    const settings = loadSettings();
+    settings.scatter = checked;
+    saveSettings(settings);
+  });
+
+  scatterAmountSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    scatterAmountValue.textContent = `${value}%`;
+    window.asciiScatterAmount = value;
+
+    const settings = loadSettings();
+    settings.scatterAmount = value;
+    saveSettings(settings);
+  });
+
+  scatterDistanceSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    scatterDistanceValue.textContent = `${value}%`;
+    window.asciiScatterDistance = value;
+
+    const settings = loadSettings();
+    settings.scatterDistance = value;
+    saveSettings(settings);
+  });
+
+  brightOnlyToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiBrightOnly = checked;
+
+    const settings = loadSettings();
+    settings.brightOnly = checked;
+    saveSettings(settings);
+  });
+
+  brightThresholdSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    brightThresholdValue.textContent = `${value}%`;
+    window.asciiBrightThreshold = value;
+
+    const settings = loadSettings();
+    settings.brightThreshold = value;
+    saveSettings(settings);
+  });
+
+  densitySlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    densityValue.textContent = `${value}%`;
+    window.asciiDensity = value;
+
+    const settings = loadSettings();
+    settings.density = value;
+    saveSettings(settings);
+    applyFontMetrics(settings);
+  });
+
+  // Glitch toggle
+  glitchToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiGlitch = checked;
+
+    const settings = loadSettings();
+    settings.glitch = checked;
+    saveSettings(settings);
+  });
+
+  glitchRateSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    glitchRateValue.textContent = `${value}%`;
+    window.asciiGlitchRate = value;
+
+    const settings = loadSettings();
+    settings.glitchRate = value;
+    saveSettings(settings);
+  });
+
+  glitchIntensitySlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    glitchIntensityValue.textContent = `${value}%`;
+    window.asciiGlitchIntensity = value;
+
+    const settings = loadSettings();
+    settings.glitchIntensity = value;
+    saveSettings(settings);
+  });
+
+  mouseAvoidToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiMouseAvoid = checked;
+
+    const settings = loadSettings();
+    settings.mouseAvoid = checked;
+    saveSettings(settings);
+  });
+
   // Tabs
   function setActiveTab(mode) {
     sourceMode = mode;
@@ -274,17 +458,16 @@ document.addEventListener('DOMContentLoaded', () => {
       updateExportVisibility();
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setActiveTab('image');
-      hasImage = true;
-      imageEmptyMessage.classList.add('hidden');
-      updateExportVisibility();
-      if (window.setAsciiImage) {
-        window.setAsciiImage(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    const objectUrl = URL.createObjectURL(file);
+    setActiveTab('image');
+    hasImage = true;
+    imageEmptyMessage.classList.add('hidden');
+    updateExportVisibility();
+    if (window.setAsciiImage) {
+      window.setAsciiImage(objectUrl, { revokeUrl: objectUrl });
+    } else {
+      URL.revokeObjectURL(objectUrl);
+    }
   });
 
   // Custom pattern input
@@ -325,6 +508,17 @@ document.addEventListener('DOMContentLoaded', () => {
         asciiSpan.style[property] = value;
       }
     }, 100);
+  }
+
+  function applyFontMetrics(settings) {
+    const density = Math.max(10, Math.min(100, Number(settings.density ?? 100)));
+    const scale = 1 + (1 - density / 100) * 0.8;
+    const baseFontSize = Number(settings.fontSize || 16);
+    const baseLineHeight = Number(settings.lineHeight || 6);
+    const fontSize = Math.max(4, Math.round(baseFontSize * scale));
+    const lineHeight = Math.max(2, Math.round(baseLineHeight * scale));
+    updateAsciiStyle('fontSize', `${fontSize}px`);
+    updateAsciiStyle('lineHeight', `${lineHeight}px`);
   }
 
   function updateCustomPatternVisibility(pattern) {
