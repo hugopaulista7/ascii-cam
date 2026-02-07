@@ -19,8 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const brightThresholdSlider = document.getElementById('bright-threshold');
   const densitySlider = document.getElementById('density');
   const glitchToggle = document.getElementById('glitch-toggle');
+  const glitchRowToggle = document.getElementById('glitch-row-toggle');
   const glitchRateSlider = document.getElementById('glitch-rate');
   const glitchIntensitySlider = document.getElementById('glitch-intensity');
+  const glitchArtifactsAmountSlider = document.getElementById('glitch-artifacts-amount');
+  const glitchArtifactsSizeSlider = document.getElementById('glitch-artifacts-size');
   const mouseAvoidToggle = document.getElementById('mouse-avoid-toggle');
   const customPatternWrapper = document.getElementById('custom-pattern-wrapper');
   const customPatternInput = document.getElementById('custom-pattern');
@@ -43,6 +46,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const brightThresholdValue = document.getElementById('bright-threshold-value');
   const glitchRateValue = document.getElementById('glitch-rate-value');
   const glitchIntensityValue = document.getElementById('glitch-intensity-value');
+  const glitchArtifactsAmountValue = document.getElementById('glitch-artifacts-amount-value');
+  const glitchArtifactsSizeValue = document.getElementById('glitch-artifacts-size-value');
   
   let menuOpen = false;
   let sourceMode = 'camera';
@@ -69,8 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     brightThreshold: 60,
     density: 100,
     glitch: false,
+    glitchRow: false,
     glitchRate: 50,
     glitchIntensity: 50,
+    glitchArtifactsAmount: 20,
+    glitchArtifactsSize: 3,
     mouseAvoid: true,
     customPattern: ''
   };
@@ -126,8 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
     brightThresholdSlider.value = settings.brightThreshold ?? 60;
     densitySlider.value = settings.density ?? 100;
     glitchToggle.checked = settings.glitch || false;
+    glitchRowToggle.checked = settings.glitchRow || false;
     glitchRateSlider.value = settings.glitchRate ?? 50;
     glitchIntensitySlider.value = settings.glitchIntensity ?? 50;
+    glitchArtifactsAmountSlider.value = settings.glitchArtifactsAmount ?? 20;
+    glitchArtifactsSizeSlider.value = settings.glitchArtifactsSize ?? 3;
     mouseAvoidToggle.checked = settings.mouseAvoid ?? true;
     customPatternInput.value = settings.customPattern || '';
     updateCustomPatternVisibility(settings.pattern || 'standard');
@@ -143,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
     brightThresholdValue.textContent = `${settings.brightThreshold ?? 60}%`;
     glitchRateValue.textContent = `${settings.glitchRate ?? 50}%`;
     glitchIntensityValue.textContent = `${settings.glitchIntensity ?? 50}%`;
+    glitchArtifactsAmountValue.textContent = `${settings.glitchArtifactsAmount ?? 20}%`;
+    glitchArtifactsSizeValue.textContent = `${settings.glitchArtifactsSize ?? 3}`;
     
     applyFontMetrics(settings);
     updateAsciiStyle('color', settings.textColor);
@@ -163,8 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.asciiBrightThreshold = settings.brightThreshold ?? 60;
     window.asciiDensity = settings.density ?? 100;
     window.asciiGlitch = settings.glitch || false;
+    window.asciiGlitchRow = settings.glitchRow || false;
     window.asciiGlitchRate = settings.glitchRate ?? 50;
     window.asciiGlitchIntensity = settings.glitchIntensity ?? 50;
+    window.asciiGlitchArtifactsAmount = settings.glitchArtifactsAmount ?? 20;
+    window.asciiGlitchArtifactsSize = settings.glitchArtifactsSize ?? 3;
     window.asciiMouseAvoid = settings.mouseAvoid ?? true;
   }
   
@@ -400,6 +416,15 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettings(settings);
   });
 
+  glitchRowToggle.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiGlitchRow = checked;
+
+    const settings = loadSettings();
+    settings.glitchRow = checked;
+    saveSettings(settings);
+  });
+
   glitchRateSlider.addEventListener('input', (e) => {
     const value = Number(e.target.value);
     glitchRateValue.textContent = `${value}%`;
@@ -417,6 +442,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const settings = loadSettings();
     settings.glitchIntensity = value;
+    saveSettings(settings);
+  });
+
+  glitchArtifactsAmountSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    glitchArtifactsAmountValue.textContent = `${value}%`;
+    window.asciiGlitchArtifactsAmount = value;
+
+    const settings = loadSettings();
+    settings.glitchArtifactsAmount = value;
+    saveSettings(settings);
+  });
+
+  glitchArtifactsSizeSlider.addEventListener('input', (e) => {
+    const value = Number(e.target.value);
+    glitchArtifactsSizeValue.textContent = `${value}`;
+    window.asciiGlitchArtifactsSize = value;
+
+    const settings = loadSettings();
+    settings.glitchArtifactsSize = value;
     saveSettings(settings);
   });
 

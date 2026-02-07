@@ -188,10 +188,15 @@ function draw() {
   const patternAnimate = Boolean(window.asciiPatternAnimate);
   const patternSpeed = Math.max(2, Number(window.asciiPatternSpeed ?? 6));
   const glitchEnabled = Boolean(window.asciiGlitch);
+  const glitchRowEnabled = Boolean(window.asciiGlitchRow);
   let glitchRowShift = null;
   let glitchRowDrop = null;
+  let glitchRowStrong = null;
+  let glitchRowTint = null;
   const glitchRate = Number(window.asciiGlitchRate ?? 50) / 100;
   const glitchIntensity = Number(window.asciiGlitchIntensity ?? 50) / 100;
+  const glitchArtifactsAmount = Math.max(0, Math.min(1, Number(window.asciiGlitchArtifactsAmount ?? 20) / 100));
+  const glitchArtifactsSize = Math.max(1, Math.round(Number(window.asciiGlitchArtifactsSize ?? 3)));
   const glitchColorChance = glitchEnabled ? (0.05 + 0.35 * glitchIntensity) : 0;
   const density = Math.max(0.1, Math.min(1, Number(window.asciiDensity ?? 100) / 100));
   const scatterEnabled = Boolean(window.asciiScatter);
@@ -211,6 +216,8 @@ function draw() {
   if (glitchEnabled) {
     glitchRowShift = new Array(gridHeight);
     glitchRowDrop = new Array(gridHeight);
+    glitchRowStrong = new Array(gridHeight);
+    glitchRowTint = new Array(gridHeight);
     for (let j = 0; j < gridHeight; j += 1) {
       const intensityBoost = 0.25 + 0.75 * glitchIntensity;
       if (random() < Math.min(1, glitchRate * intensityBoost)) {
@@ -226,6 +233,51 @@ function draw() {
       } else {
         glitchRowShift[j] = 0;
         glitchRowDrop[j] = false;
+      }
+      if (glitchRowEnabled) {
+        const strongChance = (0.1 + 0.35 * glitchIntensity) * (0.6 + glitchRate);
+        glitchRowStrong[j] = random() < strongChance;
+        glitchRowTint[j] = glitchRowStrong[j] && random() < (0.25 + 0.35 * glitchIntensity)
+          ? GLITCH_COLORS[Math.floor(random(GLITCH_COLORS.length))]
+          : null;
+      }
+    }
+  }
+
+  let glitchArtifactMap = null;
+  if (glitchEnabled && glitchArtifactsAmount > 0) {
+    const size = glitchArtifactsSize;
+    const maxBlocks = Math.max(1, Math.floor((gridWidth * gridHeight) / (size * size)));
+    const baseBlocks = Math.max(1, Math.round(maxBlocks * 0.04));
+    const intensityBoost = 0.4 + 0.6 * glitchIntensity;
+    const blockCount = Math.min(maxBlocks, Math.max(0, Math.round(baseBlocks * glitchArtifactsAmount * intensityBoost)));
+    const dxRange = 2 + 10 * glitchIntensity;
+    const dyRange = 1 + 7 * glitchIntensity;
+    const dropChance = 0.02 + 0.22 * glitchArtifactsAmount;
+    glitchArtifactMap = new Map();
+
+    for (let b = 0; b < blockCount; b += 1) {
+      const startX = Math.floor(random(gridWidth));
+      const startY = Math.floor(random(gridHeight));
+      const dx = Math.round(random(-dxRange, dxRange));
+      const dy = Math.round(random(-dyRange, dyRange));
+      const tint = random() < (0.2 + 0.5 * glitchIntensity)
+        ? GLITCH_COLORS[Math.floor(random(GLITCH_COLORS.length))]
+        : null;
+
+      for (let by = 0; by < size; by += 1) {
+        for (let bx = 0; bx < size; bx += 1) {
+          const px = startX + bx;
+          const py = startY + by;
+          if (px >= 0 && px < gridWidth && py >= 0 && py < gridHeight) {
+            glitchArtifactMap.set(`${px},${py}`, {
+              dx,
+              dy,
+              drop: random() < dropChance,
+              tint
+            });
+          }
+        }
       }
     }
   }
@@ -388,6 +440,8 @@ function draw() {
       if (shouldRender) {
         let sampleX = srcX;
         let sampleY = srcY;
+        let artifactTint = null;
+        let rowTint = null;
 
         if (mouseAvoidEnabled) {
           const dx = screenX - mouseGridX;
@@ -412,6 +466,30 @@ function draw() {
           if (glitchRowDrop[screenY] && (i % 3 === 0 || i % 7 === 0)) {
             str += ' ';
             continue;
+          }
+        }
+
+        if (glitchEnabled && glitchRowEnabled && screenY >= 0 && screenY < gridHeight && glitchRowStrong && glitchRowStrong[screenY]) {
+          const baseShift = glitchRowShift[screenY] || 0;
+          const smear = Math.round(baseShift * (2 + 3 * glitchIntensity)) || Math.round(random(-6, 6));
+          sampleX = (sampleX + smear + gridWidth) % gridWidth;
+          rowTint = glitchRowTint ? glitchRowTint[screenY] : null;
+          if (random() < (0.05 + 0.15 * glitchIntensity)) {
+            str += ' ';
+            continue;
+          }
+        }
+
+        if (glitchArtifactMap && screenX >= 0 && screenX < gridWidth && screenY >= 0 && screenY < gridHeight) {
+          const artifactCell = glitchArtifactMap.get(`${screenX},${screenY}`);
+          if (artifactCell) {
+            if (artifactCell.drop) {
+              str += ' ';
+              continue;
+            }
+            sampleX = Math.min(gridWidth - 1, Math.max(0, Math.round(sampleX + artifactCell.dx)));
+            sampleY = Math.min(gridHeight - 1, Math.max(0, Math.round(sampleY + artifactCell.dy)));
+            artifactTint = artifactCell.tint || null;
           }
         }
 
@@ -458,7 +536,11 @@ function draw() {
           }
           const escaped = escapeHtmlChar(c);
           const darkBoost = glitchEnabled ? (0.5 + (1 - bri) * 0.9 * glitchIntensity) : 1;
-          if (glitchEnabled && random() < glitchColorChance * darkBoost && screenY >= 0 && screenY < gridHeight && glitchRowShift[screenY]) {
+          if (glitchEnabled && rowTint && c !== ' ') {
+            str += `<span style="color:${rowTint}">${escaped}</span>`;
+          } else if (glitchEnabled && artifactTint && c !== ' ') {
+            str += `<span style="color:${artifactTint}">${escaped}</span>`;
+          } else if (glitchEnabled && random() < glitchColorChance * darkBoost && screenY >= 0 && screenY < gridHeight && glitchRowShift[screenY]) {
             const color = GLITCH_COLORS[Math.floor(random(GLITCH_COLORS.length))];
             str += `<span style="color:${color}">${escaped}</span>`;
           } else {
