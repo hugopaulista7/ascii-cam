@@ -217,9 +217,16 @@ function draw() {
   const totalCells = gridWidth * gridHeight;
   let writeAnimRevealedCount = totalCells;
   if (writeAnimEnabled) {
-    const cycleMs = writeAnimDuration * 1000;
-    const progress = (millis() % cycleMs) / cycleMs;
-    writeAnimRevealedCount = Math.floor(progress * totalCells);
+    const writeMs = writeAnimDuration * 1000;
+    const pauseMs = 2000;
+    const cycleMs = writeMs + pauseMs;
+    const elapsed = millis() % cycleMs;
+    if (elapsed < writeMs) {
+      const progress = elapsed / writeMs;
+      writeAnimRevealedCount = Math.floor(progress * totalCells);
+    } else {
+      writeAnimRevealedCount = totalCells; // pause: all chars visible
+    }
   }
 
   if (glitchEnabled) {
