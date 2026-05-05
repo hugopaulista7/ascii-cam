@@ -449,6 +449,29 @@
                   />
                   <span class="text-gray-300 text-xs">Flip V</span>
                 </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    id="auto-flip-h"
+                    class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]"
+                  />
+                  <span class="text-gray-300 text-xs">Auto Flip H</span>
+                </label>
+                <div id="auto-flip-interval-wrap" class="hidden">
+                  <label class="flex items-center justify-between text-gray-300 text-xs mb-1">
+                    <span>Interval</span>
+                    <span id="auto-flip-interval-value" class="font-mono">800ms</span>
+                  </label>
+                  <input
+                    type="range"
+                    id="auto-flip-interval"
+                    min="100"
+                    max="3000"
+                    value="800"
+                    step="100"
+                    class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                  />
+                </div>
               </div>
             </div>
           </div>

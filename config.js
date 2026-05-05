@@ -8,6 +8,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const bgColorPicker = document.getElementById('bg-color');
   const flipHCheckbox = document.getElementById('flip-h');
   const flipVCheckbox = document.getElementById('flip-v');
+  const autoFlipHCheckbox = document.getElementById('auto-flip-h');
+  const autoFlipIntervalSlider = document.getElementById('auto-flip-interval');
+  const autoFlipIntervalValue = document.getElementById('auto-flip-interval-value');
+  const autoFlipIntervalWrap = document.getElementById('auto-flip-interval-wrap');
   const shapeSelect = document.getElementById('shape-select');
   const patternSelect = document.getElementById('pattern-select');
   const patternAnimateToggle = document.getElementById('pattern-animate-toggle');
@@ -63,6 +67,8 @@ document.addEventListener('DOMContentLoaded', () => {
     backgroundColor: '#000000',
     flipH: false,
     flipV: false,
+    autoFlipH: false,
+    autoFlipInterval: 800,
     shape: 'rectangle',
     pattern: 'standard',
     patternAnimate: false,
@@ -123,6 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
     bgColorPicker.value = settings.backgroundColor || '#000000';
     flipHCheckbox.checked = settings.flipH || false;
     flipVCheckbox.checked = settings.flipV || false;
+    autoFlipHCheckbox.checked = false;
+    autoFlipIntervalWrap.classList.add('hidden');
+    autoFlipIntervalSlider.value = settings.autoFlipInterval ?? 800;
+    autoFlipIntervalValue.textContent = `${settings.autoFlipInterval ?? 800}ms`;
     shapeSelect.value = settings.shape;
     patternSelect.value = settings.pattern || 'standard';
     patternAnimateToggle.checked = settings.patternAnimate || false;
@@ -204,6 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateExportVisibility();
   });
   
+  let flipHInterval = null;
+
   // Toggle menu - existing code...
   configToggle.addEventListener('click', () => {
     menuOpen = !menuOpen;
@@ -289,12 +301,61 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Flip Horizontal Checkbox
   flipHCheckbox.addEventListener('change', (e) => {
+    if (flipHInterval) {
+      clearInterval(flipHInterval);
+      flipHInterval = null;
+      autoFlipHCheckbox.checked = false;
+      autoFlipIntervalWrap.classList.add('hidden');
+      const s = loadSettings();
+      s.autoFlipH = false;
+      saveSettings(s);
+    }
+
     const checked = e.target.checked;
     window.asciiFlipH = checked;
-    
+
     const settings = loadSettings();
     settings.flipH = checked;
     saveSettings(settings);
+  });
+
+  // Auto Flip H Toggle
+  autoFlipHCheckbox.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+
+    const settings = loadSettings();
+    settings.autoFlipH = checked;
+    saveSettings(settings);
+
+    if (checked) {
+      autoFlipIntervalWrap.classList.remove('hidden');
+      const ms = parseInt(autoFlipIntervalSlider.value, 10);
+      flipHInterval = setInterval(() => {
+        window.asciiFlipH = !window.asciiFlipH;
+      }, ms);
+    } else {
+      autoFlipIntervalWrap.classList.add('hidden');
+      clearInterval(flipHInterval);
+      flipHInterval = null;
+      window.asciiFlipH = flipHCheckbox.checked;
+    }
+  });
+
+  // Auto Flip H Interval Slider
+  autoFlipIntervalSlider.addEventListener('input', (e) => {
+    const ms = parseInt(e.target.value, 10);
+    autoFlipIntervalValue.textContent = `${ms}ms`;
+
+    const settings = loadSettings();
+    settings.autoFlipInterval = ms;
+    saveSettings(settings);
+
+    if (flipHInterval) {
+      clearInterval(flipHInterval);
+      flipHInterval = setInterval(() => {
+        window.asciiFlipH = !window.asciiFlipH;
+      }, ms);
+    }
   });
 
   // Flip Vertical Checkbox
