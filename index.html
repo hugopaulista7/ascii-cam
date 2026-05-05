@@ -476,6 +476,36 @@
             </div>
           </div>
 
+          <!-- Write Animation -->
+          <div class="mb-6">
+            <label class="text-gray-300 text-sm font-medium mb-2 block">Write Animation</label>
+            <div class="space-y-3">
+              <label class="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="write-anim"
+                  class="w-4 h-4 rounded border-gray-600 bg-gray-700 text-[#00FF41] focus:ring-[#00FF41]"
+                />
+                <span class="text-gray-300 text-xs">Enable</span>
+              </label>
+              <div id="write-anim-duration-wrap" class="hidden">
+                <label class="flex items-center justify-between text-gray-300 text-xs mb-1">
+                  <span>Duration</span>
+                  <span id="write-anim-duration-value" class="font-mono">5s</span>
+                </label>
+                <input
+                  type="range"
+                  id="write-anim-duration"
+                  min="1"
+                  max="30"
+                  value="5"
+                  step="1"
+                  class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                />
+              </div>
+            </div>
+          </div>
+
           <!-- Shape Selector -->
           <div class="mb-6">
             <label class="text-gray-300 text-sm font-medium mb-2 block"

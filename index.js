@@ -212,6 +212,15 @@ function draw() {
   const mouseGridX = mouseAvoidEnabled ? (mouseGrid.x / asciiBounds.width) * gridWidth : null;
   const mouseGridY = mouseAvoidEnabled ? (mouseGrid.y / asciiBounds.height) * gridHeight : null;
   const mouseHoleRadius = mouseAvoidEnabled ? (3 + 8 * glitchIntensity) : 0;
+  const writeAnimEnabled = Boolean(window.asciiWriteAnim);
+  const writeAnimDuration = Math.max(1, Number(window.asciiWriteAnimDuration ?? 5));
+  const totalCells = gridWidth * gridHeight;
+  let writeAnimRevealedCount = totalCells;
+  if (writeAnimEnabled) {
+    const cycleMs = writeAnimDuration * 1000;
+    const progress = (millis() % cycleMs) / cycleMs;
+    writeAnimRevealedCount = Math.floor(progress * totalCells);
+  }
 
   if (glitchEnabled) {
     glitchRowShift = new Array(gridHeight);
@@ -436,7 +445,15 @@ function draw() {
       // while the video content inside flips.
       
       shouldRender = shapeMask(screenX, screenY);
-      
+
+      if (writeAnimEnabled && screenX >= 0 && screenY >= 0 && screenX < gridWidth && screenY < gridHeight) {
+        const cellIndex = screenY * gridWidth + screenX;
+        if (cellIndex >= writeAnimRevealedCount) {
+          str += ' ';
+          continue;
+        }
+      }
+
       if (shouldRender) {
         let sampleX = srcX;
         let sampleY = srcY;

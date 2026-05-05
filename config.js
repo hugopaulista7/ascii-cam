@@ -29,6 +29,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const glitchArtifactsAmountSlider = document.getElementById('glitch-artifacts-amount');
   const glitchArtifactsSizeSlider = document.getElementById('glitch-artifacts-size');
   const mouseAvoidToggle = document.getElementById('mouse-avoid-toggle');
+  const writeAnimCheckbox = document.getElementById('write-anim');
+  const writeAnimDurationSlider = document.getElementById('write-anim-duration');
+  const writeAnimDurationValue = document.getElementById('write-anim-duration-value');
+  const writeAnimDurationWrap = document.getElementById('write-anim-duration-wrap');
   const customPatternWrapper = document.getElementById('custom-pattern-wrapper');
   const customPatternInput = document.getElementById('custom-pattern');
   const cameraTab = document.getElementById('tab-camera');
@@ -86,7 +90,9 @@ document.addEventListener('DOMContentLoaded', () => {
     glitchArtifactsAmount: 20,
     glitchArtifactsSize: 3,
     mouseAvoid: true,
-    customPattern: ''
+    customPattern: '',
+    writeAnim: false,
+    writeAnimDuration: 5
   };
   
   // Load settings from localStorage
@@ -192,6 +198,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.asciiGlitchArtifactsAmount = settings.glitchArtifactsAmount ?? 20;
     window.asciiGlitchArtifactsSize = settings.glitchArtifactsSize ?? 3;
     window.asciiMouseAvoid = settings.mouseAvoid ?? true;
+    writeAnimCheckbox.checked = settings.writeAnim || false;
+    window.asciiWriteAnim = settings.writeAnim || false;
+    const savedWriteDuration = settings.writeAnimDuration ?? 5;
+    writeAnimDurationSlider.value = savedWriteDuration;
+    writeAnimDurationValue.textContent = `${savedWriteDuration}s`;
+    window.asciiWriteAnimDuration = savedWriteDuration;
+    if (settings.writeAnim) {
+      writeAnimDurationWrap.classList.remove('hidden');
+    } else {
+      writeAnimDurationWrap.classList.add('hidden');
+    }
   }
   
   // Initialize with saved settings
@@ -532,6 +549,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const settings = loadSettings();
     settings.mouseAvoid = checked;
+    saveSettings(settings);
+  });
+
+  // Write Animation Toggle
+  writeAnimCheckbox.addEventListener('change', (e) => {
+    const checked = e.target.checked;
+    window.asciiWriteAnim = checked;
+
+    if (checked) {
+      writeAnimDurationWrap.classList.remove('hidden');
+      if (flipHInterval) {
+        clearInterval(flipHInterval);
+        flipHInterval = null;
+        autoFlipHCheckbox.checked = false;
+        autoFlipIntervalWrap.classList.add('hidden');
+        const s = loadSettings();
+        s.autoFlipH = false;
+        saveSettings(s);
+      }
+    } else {
+      writeAnimDurationWrap.classList.add('hidden');
+    }
+
+    const settings = loadSettings();
+    settings.writeAnim = checked;
+    saveSettings(settings);
+  });
+
+  // Write Animation Duration Slider
+  writeAnimDurationSlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value, 10);
+    writeAnimDurationValue.textContent = `${val}s`;
+    window.asciiWriteAnimDuration = val;
+    const settings = loadSettings();
+    settings.writeAnimDuration = val;
     saveSettings(settings);
   });
 
